@@ -1,0 +1,38 @@
+package com.sharethis.adoptimization.conv.agg;
+
+import java.io.IOException;
+
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.log4j.Logger;
+
+import com.sharethis.adoptimization.conv.common.Constants;
+
+public class AggImpConvMapper extends Mapper<LongWritable, Text, Text, Text> {
+	private Text MapperKey = new Text();
+	private Text MapperVal = new Text();
+	private static final Logger logger = Logger.getLogger(Constants.AGG_LOGGER_NAME);
+
+	@Override
+	protected void setup(Context context) throws IllegalArgumentException, IOException, InterruptedException {
+		logger.info("Aggregate Impressions and Conversions Mapper Starts.");
+	}
+	
+	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+		// Input stream format: Name <tab> Label <tab> CONV/IMP <tab> Value
+		// Mapper output: 
+		// Key: Name <tab> Label
+		// Value: CONV/IMP <tab> Value
+		String[] items= value.toString().split("\t");
+		if (items.length == 4) {
+			MapperKey.set(items[0] + "\t" + items[1]);
+			MapperVal.set(items[2] + "\t" + items[3]);
+			context.write(MapperKey, MapperVal);
+		}
+	}
+	
+	protected void cleanup(Context context) throws IOException, InterruptedException {
+		logger.info("Aggregate Impressions and Conversions Mapper Completed.");
+	}
+}
