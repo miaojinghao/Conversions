@@ -23,21 +23,6 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 	private HashSet<String> hs;
 	private Pattern p_hour = Pattern.compile("(\\d\\d?):.+?");
 	
-	private static final String[] fields = {
-		"bid", "wp_bucket", "ad_slot_id", "visibility", "geo_location", 
-		"google_id", "setting_id", "user_seg_list", "verticle_list", "date", 
-		"timestamp", "campaign_name", "jid", "campaign_id", "adgroup_id", 
-		"creative_id", "domain", "deal_id", "ip", "user_agent", 
-		"cookie", "service_type", "st_campaign_id", "st_adgroup_id", "st_creative_id", 
-		"click_flag","imp_flag", "click_timestamp", "min_bid", "platform_type", 
-		"geo_target_id", "mobile", "model_id", "model_score", "gid_age", 
-		"audience_id", "browser", "os", "device", "creative_size", 
-		"sqi", "err_flag", "flag", "app_id", "carrier_id", 
-		"device_type", "is_app", "is_initial_request", "platform", "screen_orientation", 
-		"device_id", "location", "device_make", "device_model", "device_id_type", 
-		"seller_id"
-	};
-	
 	@Override
 	protected void setup(Context context) throws IllegalArgumentException, IOException, InterruptedException {
 		logger.info("Collect Impressions Mapper Starts.");
@@ -47,9 +32,9 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 		if (str_pixels != null && (!str_pixels.isEmpty())) {
 			StringTokenizer st = new StringTokenizer(str_pixels, ",");
 			while (st.hasMoreTokens()) {
-				String[] str_pixel_adg = st.nextToken().split("\\|");
-				if (str_pixel_adg.length == 2 && !hs.contains(str_pixel_adg[1])) 
-					hs.add(str_pixel_adg[1]);
+				String[] tokens = st.nextToken().split("\\|");
+				if (tokens.length == 2 && !hs.contains(tokens[1])) 
+					hs.add(tokens[1]);
 			}
 		}
 	}
@@ -66,50 +51,65 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 		// Read input data stream into a hashmap
 		StringTokenizer st = new StringTokenizer(value.toString(), "\t");
 		int index = 0;
-		while (st.hasMoreTokens() && index < fields.length) {
+		while (st.hasMoreTokens() && index < Constants.FIELDS.length) {
 			String item = st.nextToken();
 			if (item.isEmpty() || item.equalsIgnoreCase("unknown") || item.equalsIgnoreCase("null"))
 				item = "unknown";
-			hm.put(fields[index], item);
+			hm.put(Constants.FIELDS[index], item);
 			index++;
 		}
 		
 		// Get AdGroup
-		if (hm.containsKey("adgroup_id") && hs.contains(hm.get("adgroup_id"))) {
-			map_out("AdGroup", hm.get("adgroup_id") + "\t" + String.valueOf(1.0), context);
-		
-			// Get Browser
+		if (hm.containsKey("campaign_id") && hs.contains(hm.get("campaign_id"))) {
+			
+			// Get ID
+			String str_id = hm.get("campaign_id");
+			
+			// Get browser
+			String str_browser = "";
 			if (hm.containsKey("browser"))
-				map_out("Browser", hm.get("browser") + "\t" + String.valueOf(1.0), context);
-		
+				str_browser = hm.get("browser").replaceAll("[^a-zA-Z]", "");
+			
 			// Get OS
+			String str_os = "";
 			if (hm.containsKey("os"))
-				map_out("OS", hm.get("os") + "\t" + String.valueOf(1.0), context);
-				
-		
-			// Get Hour
+				str_os = hm.get("os").replaceAll("\\s|(\\(.+?\\))|\\.[a-zA-Z0-9]+?", "");
+			
+			// Get hour group
+			String str_hour = "";
 			if (hm.containsKey("timestamp")) {
 				Matcher m_hour = p_hour.matcher(STDateUtils.format(hm.get("timestamp")));
 				if (m_hour.find() && m_hour.groupCount() > 0)
-					map_out("Hour", m_hour.group(1) + "\t" + String.valueOf(1.0), context);
+					str_hour = m_hour.group(1);
 			}
-		
-			// Get State and DMA
+			String str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
+			if (str_hour_group == null || str_hour_group.isEmpty() || str_hour_group.equalsIgnoreCase("unknown") || str_hour_group.equalsIgnoreCase("null"))
+				str_hour_group = "unknown";
+			
+			// Get state and DMA
+			String str_state = "";
+			String str_dma = "";
 			if (hm.containsKey("geo_location")) {
 				String[] str_geo = hm.get("geo_location").split("\\|");
 				if (str_geo.length >= 3) {
-					map_out("State", str_geo[0] + "\t" + String.valueOf(1.0), context);
-					map_out("DMA", str_geo[2] + "\t" + String.valueOf(1.0), context);
-				}
-				else {
-					map_out("State", "null" + "\t" + String.valueOf(1.0), context);
-					map_out("DMA", "null" + "\t" + String.valueOf(1.0), context);
+					str_state = str_geo[0];
+					str_dma = str_geo[2];
 				}
 			}
+			if (str_state.isEmpty() || str_state.equalsIgnoreCase("unknown") || str_state.equalsIgnoreCase("null"))
+				str_state = "unknown";
+			if (str_dma.isEmpty() || str_dma.equalsIgnoreCase("unknown") || str_dma.equalsIgnoreCase("null"))
+				str_dma = "unknown";
+			
+			// Get domain
+			// String str_domain = "";
+			// if (hm.containsKey("domain"))
+			//	str_domain = hm.get("domain");
 		
-			// Get Domain
-			if (hm.containsKey("domain"))
-				map_out("Domain", hm.get("domain") + "\t" + String.valueOf(1.0), context);
+			// Output
+			MapperKey.set(str_hour_group);
+			MapperVal.set(str_state + "\t" + str_os + "\t" + str_browser + "\t" + str_id + "\t" + String.valueOf(1.0f));
+			context.write(MapperKey, MapperVal);
 		}
 	}
 	

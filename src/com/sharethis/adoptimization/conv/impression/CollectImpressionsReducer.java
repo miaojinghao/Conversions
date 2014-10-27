@@ -24,17 +24,18 @@ public class CollectImpressionsReducer extends Reducer<Text, Text, Text, Text> {
 		HashMap<String, Float> hm = new HashMap<String, Float>();
 		
 		for (Text val: values) {
-			String[] str_val_cnt = val.toString().split("\t");
-			if (str_val_cnt.length == 3) {
+			String[] tokens = val.toString().split("\t");
+			if (tokens.length == 5) {
+				String hmKey = tokens[0] + "\t" + tokens[1] + "\t" + tokens[2] + "\t" + tokens[3];
 				try {
-					if (hm.containsKey(str_val_cnt[1])) {				
-						float count = hm.get(str_val_cnt[1]).floatValue() + Float.parseFloat(str_val_cnt[2]);
-						hm.put(str_val_cnt[1], new Float(count));
+					if (hm.containsKey(hmKey)) {				
+						float count = hm.get(hmKey).floatValue() + Float.parseFloat(tokens[4]);
+						hm.put(hmKey, new Float(count));
 					}
 					else
-						hm.put(str_val_cnt[1], new Float(Float.parseFloat(str_val_cnt[2])));
+						hm.put(hmKey, new Float(Float.parseFloat(tokens[4])));
 				} catch (Exception e) {
-					logger.error("Invalid float number format: " + str_val_cnt[2] + " [" + e.toString() + "]");
+					logger.error("Invalid float number format: " + tokens[4] + " [" + e.toString() + "]");
 				}
 			}
 		}

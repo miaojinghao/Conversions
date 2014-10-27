@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.log4j.Logger;
 
 import com.sharethis.adoptimization.conv.common.Constants;
+import com.sharethis.adoptimization.conv.common.ConvUtils;
 
 public class AggImpConvMapper extends Mapper<LongWritable, Text, Text, Text> {
 	private Text MapperKey = new Text();
@@ -25,9 +26,9 @@ public class AggImpConvMapper extends Mapper<LongWritable, Text, Text, Text> {
 		// Key: Name <tab> Label
 		// Value: CONV/IMP <tab> Value
 		String[] items= value.toString().split("\t");
-		if (items.length == 4) {
-			MapperKey.set(items[0] + "\t" + items[1]);
-			MapperVal.set(items[2] + "\t" + items[3]);
+		if (items.length == 7) {
+			MapperKey.set(ConvUtils.join("\t", items, 0, 4));
+			MapperVal.set(ConvUtils.join("\t", items, 5, 6));
 			context.write(MapperKey, MapperVal);
 		}
 	}

@@ -23,7 +23,7 @@ import com.sharethis.adoptimization.conv.common.Constants;
 
 public class AggImpConvRunner extends Configured implements Tool {
 	private static final Logger logger = Logger.getLogger(Constants.AGG_LOGGER_NAME);
-	private static final String[] features = {"Hour", "State", "Browser", "OS", "DMA", "Domain", "AdGroup"};
+	private static final String[] features = {"1", "2", "3", "4"};
 	
 	protected void logger_init(String conf_file) {
 		PropertyConfigurator.configure(conf_file);
