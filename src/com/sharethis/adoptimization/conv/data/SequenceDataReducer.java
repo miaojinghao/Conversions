@@ -1,11 +1,15 @@
 package com.sharethis.adoptimization.conv.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.log4j.Logger;
@@ -18,12 +22,35 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 	private Pattern p_date = Pattern.compile("\"date\":\"(.+?)\"");
 	private Pattern p_hour = Pattern.compile("\\s(\\d\\d?):.+?");
 	private Pattern p_cmpn = Pattern.compile("\"cmpn\":\"(\\w+?)\"");
+	private HashMap<String, List<String>> hm_pixel_ids;
 	private Text ReducerKey = new Text();
 	private Text ReducerVal = new Text();
 	
 	@Override
 	protected void setup(Context context) throws IllegalArgumentException, IOException, InterruptedException {
 		logger.info("Sequence Impressions and Conversions Reducer Starts.");
+		
+		hm_pixel_ids = new HashMap<String, List<String>>();
+		
+		Configuration conf = context.getConfiguration();
+		String str_pixels = conf.get("pixels");
+		if (str_pixels != null && (!str_pixels.isEmpty())) {
+			StringTokenizer st = new StringTokenizer(str_pixels, ",");
+			while (st.hasMoreTokens()) {
+				String[] tokens = st.nextToken().split("\\|");
+				if (tokens.length == 2) {
+					List<String> ids;
+					if (hm_pixel_ids.containsKey(tokens[0]))
+						ids = hm_pixel_ids.get(tokens[0]);
+					else
+						ids = new ArrayList<String>();
+					if (ids != null) {
+						ids.add(tokens[1]);
+						hm_pixel_ids.put(tokens[0], ids);
+					}
+				}
+			}
+		}
 	}
 	
 	protected String get_pattern(String seq, Pattern p) {
@@ -119,13 +146,18 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 		}
 		
 		String prev = "";
+		String prev_id = "";
 		for (String key_date: tm.keySet()) {
 			String record = tm.get(key_date);
 			String[] tokens = record.split("\t");
 			String conv = "0";
 			// Conversions
-			if (tokens.length == 1) 
-				conv = "1";
+			if (tokens.length == 1) {
+				if (hm_pixel_ids.containsKey(tokens[0]) && hm_pixel_ids.get(tokens[0]).contains(prev_id))
+					conv = "1";
+				else
+					conv = "0";
+			}
 			// Impressions
 			else
 				conv = "0";
@@ -136,10 +168,18 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 				context.write(ReducerKey, ReducerVal);
 			}
 			
-			if (tokens.length == 1) 
+			if (tokens.length == 1) {
 				prev = "";
-			else
-				prev = record;		
+				prev_id = "";
+			}
+			else {
+				prev = record;
+				String[] prev_key_items = prev.split("\t");
+				if (prev_key_items.length == 5)
+					prev_id = prev_key_items[4];
+				else
+					prev_id = "";
+			}
 		}
 		
 		if (!prev.isEmpty()) {
