@@ -82,14 +82,14 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 				HashMap<String, String> hm = new HashMap<String, String>();
 				for (int i = 0; i < n && i < Constants.FIELDS.length; i++) {
 					String item = items[i];
-					if (item.isEmpty() || item.equalsIgnoreCase("unknown") ||item.equalsIgnoreCase("null"))
-						item = "unknown";
+					if (item.isEmpty() || item.equalsIgnoreCase("unknown") || item.equalsIgnoreCase("null"))
+						item = "-";
 					hm.put(Constants.FIELDS[i], item);
 				}
 				
 				if (hm.containsKey("campaign_id") && hs_ids.contains(hm.get("campaign_id")) && hm.containsKey("cookie")) {
 					String cookie_id = hm.get("cookie");
-					if (!cookie_id.equals("unknown")) {
+					if (!cookie_id.equals("-")) {
 						MapperKey.set(cookie_id);
 						MapperVal.set("IMP" + "\t" + value.toString());
 						context.write(MapperKey, MapperVal);

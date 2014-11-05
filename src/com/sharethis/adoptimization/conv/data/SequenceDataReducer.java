@@ -59,7 +59,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 		if (m.find() && m.groupCount() > 0)
 			value = m.group(1);
 		if (value == null || value.isEmpty() || value.equalsIgnoreCase("unknown") || value.equalsIgnoreCase("null"))
-			value = "unknown";
+			value = "-";
 		return value;
 	}
 	
@@ -84,7 +84,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 				for (int i = 1; i < n && i < Constants.FIELDS.length + 1; i++) {
 					String item = items[i];
 					if (item.isEmpty() || item.equalsIgnoreCase("unknown") ||item.equalsIgnoreCase("null"))
-						item = "unknown";
+						item = "-";
 					hm.put(Constants.FIELDS[i - 1], item);
 				}
 				if (hm.containsKey("timestamp")) {
@@ -95,7 +95,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 					if (hm.containsKey("campaign_id"))
 						str_id = hm.get("campaign_id");
 					if (str_id == null || str_id.isEmpty() || str_id.equalsIgnoreCase("unknown") || str_id.equalsIgnoreCase("null"))
-						str_id = "unknown";
+						str_id = "-";
 					
 					// Get hour group
 					String str_hour = "";
@@ -105,7 +105,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 							str_hour = m_hour.group(1);
 					}
 					
-					String str_hour_group = "unknown";
+					String str_hour_group = "-";
 					if (Constants.HM_HOUR_GROUP.containsKey(str_hour))
 						str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
 					
@@ -120,9 +120,9 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 						}
 					}
 					if (str_state.isEmpty() || str_state.equalsIgnoreCase("unknown") || str_state.equalsIgnoreCase("null"))
-						str_state = "unknown";
+						str_state = "-";
 					if (str_dma.isEmpty() || str_dma.equalsIgnoreCase("unknown") || str_dma.equalsIgnoreCase("null"))
-						str_dma = "unknown";
+						str_dma = "-";
 					
 					// Get browser
 					String str_browser = "";

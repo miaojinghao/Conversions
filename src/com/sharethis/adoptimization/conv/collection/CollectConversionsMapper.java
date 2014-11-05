@@ -67,7 +67,7 @@ public class CollectConversionsMapper extends Mapper<LongWritable, Text, Text, T
 		if (m.find() && m.groupCount() > 0)
 			value = m.group(1);
 		if (value.isEmpty() || value.equalsIgnoreCase("unknown") || value.equalsIgnoreCase("null"))
-			value = "unknown";
+			value = "-";
 		return value;
 	}
 	
@@ -91,7 +91,7 @@ public class CollectConversionsMapper extends Mapper<LongWritable, Text, Text, T
 				String str_hour = get_pattern(str_seq, p_hour);
 				String str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
 				if (str_hour_group == null || str_hour_group.isEmpty() || str_hour_group.equalsIgnoreCase("unknown") || str_hour_group.equalsIgnoreCase("null"))
-					str_hour_group = "unknown";
+					str_hour_group = "-";
 			
 				// Get state
 				String str_state = get_pattern(str_seq, p_st);
@@ -115,9 +115,9 @@ public class CollectConversionsMapper extends Mapper<LongWritable, Text, Text, T
 					}
 				}
 				if (str_browser.isEmpty() || str_browser.equalsIgnoreCase("unknown") || str_browser.equalsIgnoreCase("null"))
-					str_browser = "unknown";
+					str_browser = "-";
 				if (str_os.isEmpty() || str_os.equalsIgnoreCase("unknown") || str_os.equalsIgnoreCase("null"))
-					str_os = "unknown";
+					str_os = "-";
 			
 				// Mapper output
 				if (n > 0) {

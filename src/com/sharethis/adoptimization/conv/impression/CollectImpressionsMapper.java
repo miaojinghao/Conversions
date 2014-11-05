@@ -54,7 +54,7 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 		while (st.hasMoreTokens() && index < Constants.FIELDS.length) {
 			String item = st.nextToken();
 			if (item.isEmpty() || item.equalsIgnoreCase("unknown") || item.equalsIgnoreCase("null"))
-				item = "unknown";
+				item = "-";
 			hm.put(Constants.FIELDS[index], item);
 			index++;
 		}
@@ -84,7 +84,7 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 			}
 			String str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
 			if (str_hour_group == null || str_hour_group.isEmpty() || str_hour_group.equalsIgnoreCase("unknown") || str_hour_group.equalsIgnoreCase("null"))
-				str_hour_group = "unknown";
+				str_hour_group = "-";
 			
 			// Get state and DMA
 			String str_state = "";
@@ -97,9 +97,9 @@ public class CollectImpressionsMapper extends Mapper<LongWritable, Text, Text, T
 				}
 			}
 			if (str_state.isEmpty() || str_state.equalsIgnoreCase("unknown") || str_state.equalsIgnoreCase("null"))
-				str_state = "unknown";
+				str_state = "-";
 			if (str_dma.isEmpty() || str_dma.equalsIgnoreCase("unknown") || str_dma.equalsIgnoreCase("null"))
-				str_dma = "unknown";
+				str_dma = "-";
 			
 			// Get domain
 			// String str_domain = "";
