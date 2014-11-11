@@ -105,9 +105,9 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 							str_hour = m_hour.group(1);
 					}
 					
-					String str_hour_group = "-";
-					if (Constants.HM_HOUR_GROUP.containsKey(str_hour))
-						str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
+					// String str_hour_group = "-";
+					// if (Constants.HM_HOUR_GROUP.containsKey(str_hour))
+					//	str_hour_group = Constants.HM_HOUR_GROUP.get(str_hour);
 					
 					// Get State and DMA
 					String str_state = "";
@@ -139,7 +139,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 					// if (hm.containsKey("domain"))
 					//	str_domain = hm.get("domain");
 					
-					String str_imp = str_hour_group + "\t" + str_state + "\t" + str_os + "\t" + str_browser + "\t" + str_id;
+					String str_imp = str_hour + "\t" + str_state + "\t" + str_os + "\t" + str_browser + "\t" + str_id;
 					tm.put(date, str_imp);
 				}
 			}
