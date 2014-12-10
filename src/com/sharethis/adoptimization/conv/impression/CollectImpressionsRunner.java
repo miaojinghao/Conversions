@@ -48,6 +48,7 @@ public class CollectImpressionsRunner extends Configured implements Tool {
 		// Set Mapper
 		job.setMapperClass(com.sharethis.adoptimization.conv.impression.CollectImpressionsMapper.class);
 		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Text.class);
 				
 		// Set Reducer
 		job.setReducerClass(com.sharethis.adoptimization.conv.impression.CollectImpressionsReducer.class);
@@ -85,13 +86,15 @@ public class CollectImpressionsRunner extends Configured implements Tool {
 		}
 		
 		// Set input file paths
-		FileSystem fs = FileSystem.get(conf);
 		while (nDays > 0) {
 			for (int i = 0; i < 24; i++) {
 				String hour = String.format("%02d", i);
-				String fileName = "/projects/clickthroughrate/prod/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
+				// String fileName = "/projects/clickthroughrate/prod/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
+				String fileName = "s3n://sharethis-insights-backup/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
+				Path p = new Path(fileName);
+				FileSystem fs = p.getFileSystem(conf);
 				if (fs.exists(new Path(fileName))) 
-					FileInputFormat.addInputPath(job, new Path(fileName));
+					FileInputFormat.addInputPath(job, p);
 			}
 			nDays--;
 			str_startdate = STDateUtils.getNextDay(str_startdate);
@@ -101,9 +104,11 @@ public class CollectImpressionsRunner extends Configured implements Tool {
 		String output_path = rf.get("ImpressionsOutputPath", "");
 		if (output_path != null && !output_path.isEmpty()) {
 			logger.info("Getting output path: " + output_path);
-			if (fs.exists(new Path(output_path)))
-				fs.delete(new Path(output_path), true);
-			FileOutputFormat.setOutputPath(job, new Path(output_path));
+			Path p = new Path(output_path);
+			FileSystem fs = p.getFileSystem(conf);
+			if (fs.exists(p))
+				fs.delete(p, true);
+			FileOutputFormat.setOutputPath(job, p);
 		}
 		else {
 			logger.error("Output path is not specified.");
