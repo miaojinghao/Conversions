@@ -23,6 +23,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 	private Pattern p_hour = Pattern.compile("\\s(\\d\\d?):.+?");
 	private Pattern p_cmpn = Pattern.compile("\"cmpn\":\"(\\w+?)\"");
 	private HashMap<String, List<String>> hm_pixel_ids;
+	private HashMap<String, String> hmCat;
 	private Text ReducerKey = new Text();
 	private Text ReducerVal = new Text();
 	
@@ -31,6 +32,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 		logger.info("Sequence Impressions and Conversions Reducer Starts.");
 		
 		hm_pixel_ids = new HashMap<String, List<String>>();
+		hmCat = new HashMap<String, String>();
 		
 		Configuration conf = context.getConfiguration();
 		String str_pixels = conf.get("pixels");
@@ -38,7 +40,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 			StringTokenizer st = new StringTokenizer(str_pixels, ",");
 			while (st.hasMoreTokens()) {
 				String[] tokens = st.nextToken().split("\\|");
-				if (tokens.length == 2) {
+				if (tokens.length == 3) {
 					List<String> ids;
 					if (hm_pixel_ids.containsKey(tokens[0]))
 						ids = hm_pixel_ids.get(tokens[0]);
@@ -48,6 +50,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 						ids.add(tokens[1]);
 						hm_pixel_ids.put(tokens[0], ids);
 					}
+					hmCat.put(tokens[1], tokens[2]);
 				}
 			}
 		}
@@ -97,6 +100,13 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 					if (str_id == null || str_id.isEmpty() || str_id.equalsIgnoreCase("unknown") || str_id.equalsIgnoreCase("null"))
 						str_id = "-";
 					
+					// Get campaign category
+					String str_cat = "";
+					if (hmCat.containsKey(str_id))
+						str_cat = hmCat.get(str_id);
+					if (str_cat == null || str_cat.isEmpty() || str_cat.equalsIgnoreCase("unknown") || str_cat.equalsIgnoreCase("null"))
+						str_cat = "-";
+					
 					// Get hour group
 					String str_hour = "";
 					if (hm.containsKey("timestamp")) {
@@ -139,7 +149,7 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 					// if (hm.containsKey("domain"))
 					//	str_domain = hm.get("domain");
 					
-					String str_imp = str_hour + "\t" + str_state + "\t" + str_os + "\t" + str_browser + "\t" + str_id;
+					String str_imp = str_hour + "\t" + str_state + "\t" + str_os + "\t" + str_browser + "\t" + str_id + "\t" + str_cat;
 					tm.put(date, str_imp);
 				}
 			}
@@ -150,6 +160,8 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 		for (String key_date: tm.keySet()) {
 			String record = tm.get(key_date);
 			String[] tokens = record.split("\t");
+			if (tokens.length != 1 && tokens.length != 6)
+				continue;
 			String conv = "0";
 			// Conversions
 			if (tokens.length == 1) {
@@ -173,12 +185,8 @@ public class SequenceDataReducer extends Reducer<Text, Text, Text, Text> {
 				prev_id = "";
 			}
 			else {
-				prev = record;
-				String[] prev_key_items = prev.split("\t");
-				if (prev_key_items.length == 5)
-					prev_id = prev_key_items[4];
-				else
-					prev_id = "";
+				prev_id = tokens[4];
+				prev = tokens[0] + "\t" + tokens[1] + "\t" + tokens[2] + "\t" + tokens[3] + "\t" + tokens[5];
 			}
 		}
 		

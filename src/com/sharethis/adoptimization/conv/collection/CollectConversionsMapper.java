@@ -46,14 +46,14 @@ public class CollectConversionsMapper extends Mapper<LongWritable, Text, Text, T
 			while (st.hasMoreTokens()) {
 				/* token = pixel|ID where ID = CampaignID or AdGroupID*/
 				String[] tokens = st.nextToken().split("\\|");
-				if (tokens.length == 2) {
+				if (tokens.length == 3) {
 					List<String> ids;
 					if (hm.containsKey(tokens[0]))
 						ids = hm.get(tokens[0]);
 					else
 						ids = new ArrayList<String>();
 					if (ids != null) {
-						ids.add(tokens[1]);
+						ids.add(tokens[2]);
 						hm.put(tokens[0], ids);
 					}
 				}

@@ -22,8 +22,8 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 	private Text MapperKey = new Text();
 	private Text MapperVal = new Text();
 	private Pattern p_cmpn = Pattern.compile("\"cmpn\":\"(\\w+?)\"");
-	private HashMap<String, List<String>> hm_pixel_ids;
 	private HashSet<String> hs_ids;
+	private HashSet<String> hs_cmpns;
 	
 	private static final Logger logger = Logger.getLogger(Constants.SEQ_DATA_LOGGER_NAME);
 
@@ -32,7 +32,7 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 		logger.info("Sequence Impressions and Conversions Mapper Starts.");
 		
 		hs_ids = new HashSet<String>();
-		hm_pixel_ids = new HashMap<String, List<String>>();
+		hs_cmpns = new HashSet<String>();
 		
 		Configuration conf = context.getConfiguration();
 		String str_pixels = conf.get("pixels");
@@ -40,18 +40,11 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 			StringTokenizer st = new StringTokenizer(str_pixels, ",");
 			while (st.hasMoreTokens()) {
 				String[] tokens = st.nextToken().split("\\|");
-				if (tokens.length == 2) {
+				if (tokens.length == 3) {
 					if (!hs_ids.contains(tokens[1]))
 						hs_ids.add(tokens[1]);
-					List<String> ids;
-					if (hm_pixel_ids.containsKey(tokens[0]))
-						ids = hm_pixel_ids.get(tokens[0]);
-					else
-						ids = new ArrayList<String>();
-					if (ids != null) {
-						ids.add(tokens[1]);
-						hm_pixel_ids.put(tokens[0], ids);
-					}
+					if (!hs_cmpns.contains(tokens[0]))
+						hs_cmpns.add(tokens[0]);
 				}
 			}
 		}
@@ -69,12 +62,14 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 				List<String> val = new ArrayList<String>();				
 				for (int i = 1; i < n; i++) {
 					Matcher m_cmpn = p_cmpn.matcher(items[i]);
-					if (m_cmpn.find() && m_cmpn.groupCount() > 0 && hm_pixel_ids.containsKey(m_cmpn.group(1)))
+					if (m_cmpn.find() && m_cmpn.groupCount() > 0 && hs_cmpns.contains(m_cmpn.group(1)))
 						val.add(items[i]);
 				}
-				MapperKey.set(first);
-				MapperVal.set("CONV" + "\t" + Joiner.on("\t").join(val));
-				context.write(MapperKey, MapperVal);
+				if (val.size() > 0) {
+					MapperKey.set(first);
+					MapperVal.set("CONV" + "\t" + Joiner.on("\t").join(val));
+					context.write(MapperKey, MapperVal);
+				}
 			}
 			// Else it is a campaign hourly data format
 			else {
@@ -87,7 +82,7 @@ public class SequenceDataMapper extends Mapper<LongWritable, Text, Text, Text> {
 					hm.put(Constants.FIELDS[i], item);
 				}
 				
-				if (hm.containsKey("campaign_id") && hs_ids.contains(hm.get("campaign_id")) && hm.containsKey("cookie")) {
+				if (hm.containsKey("campaign_id") && hm.containsKey("cookie") && hs_ids.contains(hm.get("campaign_id"))) {
 					String cookie_id = hm.get("cookie");
 					if (!cookie_id.equals("-")) {
 						MapperKey.set(cookie_id);

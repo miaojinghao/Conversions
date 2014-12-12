@@ -30,16 +30,25 @@ public class SequenceDataRunner extends Configured implements Tool {
 	}
 	
 	public int run(String[] args) throws Exception {
+		Configuration conf = this.getConf();
+		
+		// Command line parameters
+		String str_config = "";
+		String str_log = "";
+		
 		int n = args.length;
 		if (n < 2) {
 			System.out.println("Runner and log config files needed.");
 			System.exit(-1);
 		}
+		else {
+			str_config = args[0];
+			str_log = args[1];
+		}
 		
-		ReadConf rf = new ReadConf(args[0]);
-		logger_init(args[1]);
+		ReadConf rf = new ReadConf(str_config);
+		logger_init(str_log);
 		
-		Configuration conf = this.getConf();
 		conf.set("pixels", rf.get("Pixels", ""));
 		Job job = Job.getInstance(conf, "Sequence Data");
 		job.setJarByClass(Class.forName(this.getClass().getName()));
@@ -47,6 +56,7 @@ public class SequenceDataRunner extends Configured implements Tool {
 		// Set Mapper
 		job.setMapperClass(com.sharethis.adoptimization.conv.data.SequenceDataMapper.class);
 		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Text.class);
 				
 		// Set Reducer
 		job.setReducerClass(com.sharethis.adoptimization.conv.data.SequenceDataReducer.class);
@@ -83,16 +93,21 @@ public class SequenceDataRunner extends Configured implements Tool {
 			return -1;
 		}
 		
-		FileSystem fs = FileSystem.get(conf);
 		while (nDays > 0) {
 			for (int i = 0; i < 24; i++) {
 				String hour = String.format("%02d", i);
-				String fileName = "/projects/clickthroughrate/prod/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
-				if (fs.exists(new Path(fileName))) 
-					FileInputFormat.addInputPath(job, new Path(fileName));
-				fileName = "/projects/campaign_analytics/prod/retarg/" + str_startdate + hour + "/data";
-				if (fs.exists(new Path(fileName))) 
-					FileInputFormat.addInputPath(job, new Path(fileName));
+				// String fileName = "/projects/clickthroughrate/prod/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
+				String fileName = "s3n://sharethis-insights-backup/camp_data_hourly/" + str_startdate + hour + "/all_data_hourly";
+				Path p = new Path(fileName);
+				FileSystem fs = p.getFileSystem(conf);
+				if (fs.exists(p)) 
+					FileInputFormat.addInputPath(job, p);
+				// fileName = "/projects/campaign_analytics/prod/retarg/" + str_startdate + hour + "/data";
+				fileName = "s3n://sharethis-campaign-analytics/retarg/" + str_startdate + hour + "/data";
+				p = new Path(fileName);
+				fs = p.getFileSystem(conf);
+				if (fs.exists(p)) 
+					FileInputFormat.addInputPath(job, p);
 			}
 			nDays--;
 			str_startdate = STDateUtils.getNextDay(str_startdate);
@@ -102,9 +117,11 @@ public class SequenceDataRunner extends Configured implements Tool {
 		String output_path = rf.get("OutputPath", "");
 		if (output_path != null && !output_path.isEmpty()) {
 			logger.info("Getting output path: " + output_path);
-			if (fs.exists(new Path(output_path)))
-				fs.delete(new Path(output_path), true);
-			FileOutputFormat.setOutputPath(job, new Path(output_path));
+			Path p = new Path(output_path);
+			FileSystem fs = p.getFileSystem(conf);
+			if (fs.exists(p))
+				fs.delete(p, true);
+			FileOutputFormat.setOutputPath(job, p);
 		}
 		else {
 			logger.error("Output path is not specified.");
